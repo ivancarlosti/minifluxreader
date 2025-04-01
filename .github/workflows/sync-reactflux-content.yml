@@ -19,26 +19,36 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git config --global --add safe.directory /github/workspace
+          git config --global --add safe.directory /github/workspace/sync-temp
 
-      - name: Download and sync gh-pages content
+      - name: Download and extract gh-pages content
         run: |
-          # Create a temporary working directory
-          WORK_DIR=$(mktemp -d)
-          echo "Working directory: $WORK_DIR"
+          # Create sync-temp directory
+          mkdir -p sync-temp
+          cd sync-temp
           
-          # Download and extract the gh-pages content
-          cd $WORK_DIR
+          # Download and extract
           wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip -O gh-pages.zip
           unzip -q gh-pages.zip
           rm gh-pages.zip
           
-          # Verify content was downloaded
-          echo "Downloaded content:"
-          ls -la $WORK_DIR/ReactFlux-gh-pages/
+          # Debug: Show extracted structure
+          echo "Extracted content structure:"
+          find . -type d -print
           
-          # Return to repository root
-          cd $GITHUB_WORKSPACE
-          
+          # Move back to root
+          cd ..
+
+      - name: Verify Git repository
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Git status:"
+          git status
+          echo "Directory contents:"
+          ls -la
+
+      - name: Sync content
+        run: |
           # Backup files to preserve
           mkdir -p preserve-temp
           [ -f "CNAME" ] && cp CNAME preserve-temp/
@@ -52,18 +62,19 @@ jobs:
             ! -name 'CNAME' \
             ! -name 'README.md' \
             ! -name 'LICENSE' \
+            ! -name 'sync-temp' \
             -exec rm -rf {} +
 
-          # Move new content from temporary directory
-          if [ -d "$WORK_DIR/ReactFlux-gh-pages" ]; then
-            echo "Moving content from $WORK_DIR/ReactFlux-gh-pages"
+          # Move content from sync-temp
+          if [ -d "sync-temp/ReactFlux-gh-pages" ]; then
+            echo "Moving content from sync-temp..."
             shopt -s dotglob
-            mv $WORK_DIR/ReactFlux-gh-pages/* ./
-            rm -rf $WORK_DIR
+            mv sync-temp/ReactFlux-gh-pages/* ./
+            rm -rf sync-temp
           else
-            echo "Error: Downloaded content not found in $WORK_DIR"
-            echo "Contents of $WORK_DIR:"
-            ls -la $WORK_DIR
+            echo "Error: Content not found in sync-temp"
+            echo "sync-temp contents:"
+            ls -la sync-temp
             exit 1
           fi
 
