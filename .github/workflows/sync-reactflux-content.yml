@@ -13,17 +13,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download gh-pages content
+      - name: Download and sync gh-pages content
         run: |
-          # Install necessary tools
-          sudo apt-get -yq install wget
-
-          # Create temporary directory
-          mkdir -p reactflux-content
-
-          # Download entire gh-pages branch as zip
+          # Download the gh-pages branch as zip
           wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip -O gh-pages.zip
-          unzip -q gh-pages.zip -d reactflux-content
+          unzip -q gh-pages.zip
           rm gh-pages.zip
 
           # Backup files to preserve
@@ -41,9 +35,22 @@ jobs:
             ! -name 'LICENSE' \
             -exec rm -rf {} +
 
-          # Move downloaded content
-          mv reactflux-content/ReactFlux-gh-pages/* ./
-          rm -rf reactflux-content
+          # Move content from the unzipped folder (handle both possible folder structures)
+          if [ -d "ReactFlux-gh-pages" ]; then
+            mv ReactFlux-gh-pages/* ./
+            rm -rf ReactFlux-gh-pages
+          elif [ -d "ReactFlux-gh-pages/" ]; then
+            mv ReactFlux-gh-pages/* ./
+            rm -rf ReactFlux-gh-pages/
+          else
+            echo "Warning: Unexpected directory structure in downloaded zip"
+            # Try to find the content directory
+            content_dir=$(find . -maxdepth 1 -type d -name "ReactFlux*" | head -n 1)
+            if [ -n "$content_dir" ]; then
+              mv "$content_dir"/* ./
+              rm -rf "$content_dir"
+            fi
+          fi
 
           # Restore preserved files
           [ -f "preserve-temp/CNAME" ] && mv preserve-temp/CNAME ./
