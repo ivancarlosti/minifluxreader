@@ -16,8 +16,11 @@ jobs:
       - name: Download ReactFlux gh-pages content
         run: |
           # Clone the source repo
-          git clone --depth 1 --branch gh-pages https://github.com/electh/ReactFlux.git reactflux-temp
-          
+          if ! git clone --depth 1 --branch gh-pages https://github.com/electh/ReactFlux.git reactflux-temp; then
+            echo "Failed to clone repository"
+            exit 1
+          fi
+
           # Backup files to preserve
           mkdir -p preserve-temp
           [ -f "CNAME" ] && cp CNAME preserve-temp/
@@ -32,14 +35,17 @@ jobs:
             ! -name 'README.md' \
             ! -name 'LICENSE' \
             -exec rm -rf {} +
-          
-          # Move content excluding . and .. directories
-          shopt -s dotglob
-          mv reactflux-temp/* ./
-          if [ -d "reactflux-temp/.github" ]; then
-            mv reactflux-temp/.github ./
+
+          # Move content if any exists
+          if [ -d "reactflux-temp" ]; then
+            shopt -s dotglob nullglob
+            mv reactflux-temp/* ./ || echo "No files to move"
+            # Handle .github separately if it exists
+            if [ -d "reactflux-temp/.github" ]; then
+              mv reactflux-temp/.github ./
+            fi
+            rm -rf reactflux-temp
           fi
-          rm -rf reactflux-temp
           
           # Restore preserved files
           [ -f "preserve-temp/CNAME" ] && mv preserve-temp/CNAME ./
