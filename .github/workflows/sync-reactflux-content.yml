@@ -1,4 +1,4 @@
-name: Sync ReactFlux Content
+name: Sync ReactFlux Content to Main
 
 on:
   schedule:
@@ -13,25 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout main branch
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-        ref: gh-pages  # Try to checkout gh-pages branch
+        ref: main  # Explicitly checkout main branch
         persist-credentials: true
-
-    - name: Create gh-pages branch if it doesn't exist
-      run: |
-        if ! git show-ref --quiet refs/heads/gh-pages; then
-          echo "Creating gh-pages branch..."
-          git checkout --orphan gh-pages
-          git rm -rf .
-          echo "Initial commit" > README.md
-          git add README.md
-          git commit -m "Initialize gh-pages branch"
-        else
-          echo "gh-pages branch already exists"
-        fi
 
     - name: Download ReactFlux tree
       run: |
@@ -42,7 +29,7 @@ jobs:
         cd ..
         rm -rf temp
 
-    - name: Commit and push changes
+    - name: Commit and push changes to main
       run: |
         git config --global user.email "ivan@ivancarlos.com.br"
         git config --global user.name "ivancarlosti"
@@ -51,7 +38,8 @@ jobs:
         if git diff --quiet && git diff --cached --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Sync ReactFlux content"
+          git commit -m "Sync ReactFlux content [automated]"
           git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push origin gh-pages
+          git pull --rebase origin main  # Ensure we're up to date
+          git push origin main
         fi
