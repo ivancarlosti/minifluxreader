@@ -21,3 +21,11 @@ jobs:
         rsync -av --exclude='.github' --exclude='CNAME' --exclude='README.md' --exclude='LICENSE' ReactFlux/ ../
         cd ..
         rm -rf temp
+
+    - name: Commit changes
+      run: |
+        git config --global user.email "your-email@example.com"
+        git config --global user.name "your-username"
+        git add .
+        git commit -m "Sync ReactFlux content"
+        git push
