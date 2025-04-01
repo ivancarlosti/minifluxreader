@@ -12,6 +12,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git config --global --add safe.directory /github/workspace
 
       - name: Download and sync gh-pages content
         run: |
@@ -35,21 +42,15 @@ jobs:
             ! -name 'LICENSE' \
             -exec rm -rf {} +
 
-          # Move content from the unzipped folder (handle both possible folder structures)
-          if [ -d "ReactFlux-gh-pages" ]; then
-            mv ReactFlux-gh-pages/* ./
-            rm -rf ReactFlux-gh-pages
-          elif [ -d "ReactFlux-gh-pages/" ]; then
-            mv ReactFlux-gh-pages/* ./
-            rm -rf ReactFlux-gh-pages/
+          # Find and move content from the unzipped folder
+          content_dir=$(find . -maxdepth 1 -type d -name "ReactFlux*" | head -n 1)
+          if [ -n "$content_dir" ]; then
+            shopt -s dotglob
+            mv "$content_dir"/* ./
+            rm -rf "$content_dir"
           else
-            echo "Warning: Unexpected directory structure in downloaded zip"
-            # Try to find the content directory
-            content_dir=$(find . -maxdepth 1 -type d -name "ReactFlux*" | head -n 1)
-            if [ -n "$content_dir" ]; then
-              mv "$content_dir"/* ./
-              rm -rf "$content_dir"
-            fi
+            echo "Error: Could not find downloaded content directory"
+            exit 1
           fi
 
           # Restore preserved files
@@ -60,9 +61,10 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git config --global --add safe.directory /github/workspace
           git add -A
-          git diff-index --quiet HEAD || git commit -m "Auto-sync with ReactFlux gh-pages content"
-          git push
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "Auto-sync with ReactFlux gh-pages content"
+            git push
+          else
+            echo "No changes to commit"
+          fi
