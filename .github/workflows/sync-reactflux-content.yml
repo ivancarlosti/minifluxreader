@@ -22,14 +22,23 @@ jobs:
 
       - name: Download and sync gh-pages content
         run: |
-          # Download the gh-pages branch as zip
-          echo "Downloading gh-pages content..."
-          wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip -O gh-pages.zip
+          # Create a temporary working directory
+          WORK_DIR=$(mktemp -d)
+          echo "Working directory: $WORK_DIR"
           
-          # Extract zip
+          # Download and extract the gh-pages content
+          cd $WORK_DIR
+          wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip -O gh-pages.zip
           unzip -q gh-pages.zip
           rm gh-pages.zip
-
+          
+          # Verify content was downloaded
+          echo "Downloaded content:"
+          ls -la $WORK_DIR/ReactFlux-gh-pages/
+          
+          # Return to repository root
+          cd $GITHUB_WORKSPACE
+          
           # Backup files to preserve
           mkdir -p preserve-temp
           [ -f "CNAME" ] && cp CNAME preserve-temp/
@@ -45,16 +54,16 @@ jobs:
             ! -name 'LICENSE' \
             -exec rm -rf {} +
 
-          # Move content from the ReactFlux-gh-pages directory
-          if [ -d "ReactFlux-gh-pages" ]; then
-            echo "Moving content from ReactFlux-gh-pages directory..."
+          # Move new content from temporary directory
+          if [ -d "$WORK_DIR/ReactFlux-gh-pages" ]; then
+            echo "Moving content from $WORK_DIR/ReactFlux-gh-pages"
             shopt -s dotglob
-            mv ReactFlux-gh-pages/* ./
-            rm -rf ReactFlux-gh-pages
+            mv $WORK_DIR/ReactFlux-gh-pages/* ./
+            rm -rf $WORK_DIR
           else
-            echo "Error: ReactFlux-gh-pages directory not found"
-            echo "Current directory contents:"
-            ls -la
+            echo "Error: Downloaded content not found in $WORK_DIR"
+            echo "Contents of $WORK_DIR:"
+            ls -la $WORK_DIR
             exit 1
           fi
 
