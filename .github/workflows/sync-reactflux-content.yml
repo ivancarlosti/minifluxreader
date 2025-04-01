@@ -13,21 +13,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download ReactFlux gh-pages content
+      - name: Download gh-pages content
         run: |
-          # Clone the source repo
-          if ! git clone --depth 1 --branch gh-pages https://github.com/electh/ReactFlux.git reactflux-temp; then
-            echo "Failed to clone repository"
-            exit 1
-          fi
+          # Install necessary tools
+          sudo apt-get -yq install wget
+
+          # Create temporary directory
+          mkdir -p reactflux-content
+
+          # Download entire gh-pages branch as zip
+          wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip -O gh-pages.zip
+          unzip -q gh-pages.zip -d reactflux-content
+          rm gh-pages.zip
 
           # Backup files to preserve
           mkdir -p preserve-temp
           [ -f "CNAME" ] && cp CNAME preserve-temp/
           [ -f "README.md" ] && cp README.md preserve-temp/
           [ -f "LICENSE" ] && cp LICENSE preserve-temp/
-          
-          # Remove existing content except protected files/folders
+
+          # Clear existing content except protected files/folders
           find . -mindepth 1 \
             ! -name '.git' \
             ! -name '.github' \
@@ -36,31 +41,21 @@ jobs:
             ! -name 'LICENSE' \
             -exec rm -rf {} +
 
-          # Move content if any exists
-          if [ -d "reactflux-temp" ]; then
-            shopt -s dotglob nullglob
-            mv reactflux-temp/* ./ || echo "No files to move"
-            # Handle .github separately if it exists
-            if [ -d "reactflux-temp/.github" ]; then
-              mv reactflux-temp/.github ./
-            fi
-            rm -rf reactflux-temp
-          fi
-          
+          # Move downloaded content
+          mv reactflux-content/ReactFlux-gh-pages/* ./
+          rm -rf reactflux-content
+
           # Restore preserved files
           [ -f "preserve-temp/CNAME" ] && mv preserve-temp/CNAME ./
           [ -f "preserve-temp/README.md" ] && mv preserve-temp/README.md ./
           [ -f "preserve-temp/LICENSE" ] && mv preserve-temp/LICENSE ./
           rm -rf preserve-temp
 
-      - name: Configure Git
+      - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git config --global --add safe.directory /github/workspace
-
-      - name: Commit and push changes
-        run: |
           git add -A
-          git diff-index --quiet HEAD || git commit -m "Auto-sync with ReactFlux gh-pages branch"
+          git diff-index --quiet HEAD || git commit -m "Auto-sync with ReactFlux gh-pages content"
           git push
