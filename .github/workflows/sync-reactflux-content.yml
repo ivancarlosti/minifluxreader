@@ -15,14 +15,14 @@ jobs:
       with:
         fetch-depth: 0
         ref: main
-        repository: ivancarlosti/miniflixreader
+        repository: ivancarlosti/minifluxreader
         clean: true
         persist-credentials: true
 
     - name: Reset Git remote
       run: |
         git remote remove origin || true
-        git remote add origin https://github.com/ivancarlosti/miniflixreader.git
+        git remote add origin https://github.com/ivancarlosti/minifluxreader.git
         git remote -v
 
     - name: Download ReactFlux content
