@@ -26,17 +26,9 @@ jobs:
           echo "Downloading gh-pages content..."
           wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip -O gh-pages.zip
           
-          # List contents of zip for debugging
-          echo "Zip file contents:"
-          unzip -l gh-pages.zip | head -10
-          
           # Extract zip
           unzip -q gh-pages.zip
           rm gh-pages.zip
-          
-          # Debug: Show extracted files
-          echo "Extracted files:"
-          find . -maxdepth 2 -type d
 
           # Backup files to preserve
           mkdir -p preserve-temp
@@ -53,16 +45,15 @@ jobs:
             ! -name 'LICENSE' \
             -exec rm -rf {} +
 
-          # Find and move content (handling both old and new GitHub zip formats)
-          content_dir=$(find . -maxdepth 1 -type d -name "ReactFlux*" -o -name "gh-pages" | head -n 1)
-          if [ -n "$content_dir" ]; then
-            echo "Moving content from: $content_dir"
+          # Move content from the ReactFlux-gh-pages directory
+          if [ -d "ReactFlux-gh-pages" ]; then
+            echo "Moving content from ReactFlux-gh-pages directory..."
             shopt -s dotglob
-            mv "$content_dir"/* ./
-            rm -rf "$content_dir"
+            mv ReactFlux-gh-pages/* ./
+            rm -rf ReactFlux-gh-pages
           else
-            echo "Error: Could not find downloaded content directory"
-            echo "Available directories:"
+            echo "Error: ReactFlux-gh-pages directory not found"
+            echo "Current directory contents:"
             ls -la
             exit 1
           fi
