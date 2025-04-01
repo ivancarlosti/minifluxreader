@@ -16,52 +16,52 @@ jobs:
         fetch-depth: 0
         ref: main
         repository: ivancarlosti/miniflixreader
+        # This ensures fresh clone of YOUR repo:
+        clean: true  
         persist-credentials: true
 
-    - name: Show initial state
+    - name: Reset Git remote (CRITICAL FIX)
       run: |
-        echo "=== INITIAL STATE ==="
-        echo "Working directory:"
-        pwd
-        echo "Files before sync:"
-        ls -la
-        echo "Git status before:"
-        git status
+        git remote remove origin || true
+        git remote add origin https://github.com/ivancarlosti/miniflixreader.git
+        git remote -v  # Verify remote
 
-    - name: Download and sync content
+    - name: Download ReactFlux content
       run: |
         mkdir -p temp
         cd temp
         git clone --branch gh-pages --depth 1 https://github.com/electh/ReactFlux.git
-        echo "=== SOURCE FILES ==="
+        echo "=== Files in ReactFlux ==="
         ls -la ReactFlux/
-        echo "=== SYNCING ==="
-        rsync -av --exclude='.github' --progress ReactFlux/ ../
+        echo "=== Copying files ==="
+        rsync -av \
+          --exclude='.github' \
+          --exclude='.git' \
+          ReactFlux/ ../
         cd ..
-        echo "=== RESULT AFTER SYNC ==="
+        echo "=== Files after copy ==="
         ls -la
-
-    - name: Verify changes
-      run: |
-        echo "=== CHANGES TO BE COMMITTED ==="
-        git add .
-        git status
-        git diff --cached --stat
-        if [ -z "$(git status --porcelain)" ]; then
-          echo "No changes detected!"
-          exit 1
-        fi
 
     - name: Commit changes
       run: |
         git config --global user.email "ivan@ivancarlos.com.br"
         git config --global user.name "ivancarlosti"
-        git commit -m "Sync ReactFlux content [automated]"
-        git show --stat
+        git add .
+        
+        if [ -n "$(git status --porcelain)" ]; then
+          git commit -m "Sync ReactFlux content [automated]"
+          echo "=== Commit details ==="
+          git show --stat
+        else
+          echo "No changes to commit"
+          exit 0
+        fi
 
-    - name: Push changes
+    - name: Push to YOUR repository (AUTH FIX)
       run: |
-        git remote -v
-        git push origin main
-        echo "=== PUSH VERIFICATION ==="
-        git ls-remote --heads origin
+        # Use GitHub's native token authentication
+        git push \
+          https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/ivancarlosti/miniflixreader.git \
+          HEAD:main
+        echo "=== Push successful ==="
+        echo "Verify at: https://github.com/ivancarlosti/miniflixreader/tree/main"
