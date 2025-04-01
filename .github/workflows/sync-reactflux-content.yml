@@ -1,0 +1,53 @@
+name: Sync ReactFlux gh-pages content
+on:
+  schedule:
+    # Runs every 12 hours (at 00:00 and 12:00 UTC)
+    - cron: '0 */12 * * *'
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  sync-content:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for pushing changes back
+
+      - name: Download ReactFlux gh-pages content
+        run: |
+          # Clone just the gh-pages branch of the source repo
+          git clone --depth 1 --branch gh-pages https://github.com/electh/ReactFlux.git reactflux-temp
+          
+          # Create backup of files to preserve
+          mkdir preserve-temp
+          if [ -f "CNAME" ]; then cp CNAME preserve-temp/; fi
+          if [ -f "README.md" ]; then cp README.md preserve-temp/; fi
+          if [ -f "LICENSE" ]; then cp LICENSE preserve-temp/; fi
+          
+          # Remove existing content except protected files/folders
+          find . -maxdepth 1 \
+            ! -name '.git' \
+            ! -name '.github' \
+            ! -name 'CNAME' \
+            ! -name 'README.md' \
+            ! -name 'LICENSE' \
+            -exec rm -rf {} +
+          
+          # Move all content from temp folder to root
+          mv reactflux-temp/{.,}* ./
+          rm -rf reactflux-temp
+          
+          # Restore preserved files if they existed
+          if [ -f "preserve-temp/CNAME" ]; then mv preserve-temp/CNAME ./; fi
+          if [ -f "preserve-temp/README.md" ]; then mv preserve-temp/README.md ./; fi
+          if [ -f "preserve-temp/LICENSE" ]; then mv preserve-temp/LICENSE ./; fi
+          rm -rf preserve-temp
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "Auto-sync with ReactFlux gh-pages branch (preserved local files)"
+          git push
