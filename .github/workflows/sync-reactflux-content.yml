@@ -19,42 +19,59 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git config --global --add safe.directory /github/workspace
-          git config --global --add safe.directory /github/workspace/sync-temp
 
-      - name: Download and extract gh-pages content
+      - name: Download and verify gh-pages content
         run: |
-          # Create sync-temp directory
+          # Create fresh temp directory
+          TEMP_DIR=$(mktemp -d)
+          echo "Created temp directory: $TEMP_DIR"
+          
+          # Download the zip file with verbose output
+          echo "Downloading gh-pages.zip..."
+          wget --show-progress -O "$TEMP_DIR/gh-pages.zip" https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip
+          
+          # Verify download
+          echo "Download verification:"
+          ls -lh "$TEMP_DIR/gh-pages.zip"
+          file "$TEMP_DIR/gh-pages.zip"
+          unzip -l "$TEMP_DIR/gh-pages.zip" | head -10
+          
+          # Extract to temp directory
+          echo "Extracting..."
+          unzip -q "$TEMP_DIR/gh-pages.zip" -d "$TEMP_DIR"
+          rm "$TEMP_DIR/gh-pages.zip"
+          
+          # Verify extraction
+          echo "Extracted content:"
+          find "$TEMP_DIR" -maxdepth 2 -type d -print
+          
+          # Copy to sync-temp for examination
           mkdir -p sync-temp
-          cd sync-temp
+          cp -r "$TEMP_DIR"/* sync-temp/
+          echo "Copied to sync-temp for debugging:"
+          ls -la sync-temp
           
-          # Download and extract
-          wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip -O gh-pages.zip
-          unzip -q gh-pages.zip
-          rm gh-pages.zip
-          
-          # Debug: Show extracted structure
-          echo "Extracted content structure:"
-          find . -type d -print
-          
-          # Move back to root
-          cd ..
+          # Move content to workspace root
+          if [ -d "$TEMP_DIR/ReactFlux-gh-pages" ]; then
+            echo "Moving content to workspace root..."
+            shopt -s dotglob
+            mv "$TEMP_DIR/ReactFlux-gh-pages"/* ./
+            rm -rf "$TEMP_DIR"
+          else
+            echo "Error: Could not find ReactFlux-gh-pages in extracted content"
+            echo "Temp directory contents:"
+            find "$TEMP_DIR" -type d -print
+            exit 1
+          fi
 
-      - name: Verify Git repository
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Git status:"
-          git status
-          echo "Directory contents:"
-          ls -la
-
-      - name: Sync content
+      - name: Backup and clean workspace
         run: |
           # Backup files to preserve
           mkdir -p preserve-temp
           [ -f "CNAME" ] && cp CNAME preserve-temp/
           [ -f "README.md" ] && cp README.md preserve-temp/
           [ -f "LICENSE" ] && cp LICENSE preserve-temp/
-
+          
           # Clear existing content except protected files/folders
           find . -mindepth 1 \
             ! -name '.git' \
@@ -65,20 +82,8 @@ jobs:
             ! -name 'sync-temp' \
             -exec rm -rf {} +
 
-          # Move content from sync-temp
-          if [ -d "sync-temp/ReactFlux-gh-pages" ]; then
-            echo "Moving content from sync-temp..."
-            shopt -s dotglob
-            mv sync-temp/ReactFlux-gh-pages/* ./
-            rm -rf sync-temp
-          else
-            echo "Error: Content not found in sync-temp"
-            echo "sync-temp contents:"
-            ls -la sync-temp
-            exit 1
-          fi
-
-          # Restore preserved files
+      - name: Restore preserved files
+        run: |
           [ -f "preserve-temp/CNAME" ] && mv preserve-temp/CNAME ./
           [ -f "preserve-temp/README.md" ] && mv preserve-temp/README.md ./
           [ -f "preserve-temp/LICENSE" ] && mv preserve-temp/LICENSE ./
