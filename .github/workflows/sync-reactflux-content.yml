@@ -1,7 +1,7 @@
 name: Sync ReactFlux Content to Main
 
 on:
-  workflow_dispatch:  # Remove schedule until testing is complete
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -15,36 +15,53 @@ jobs:
       with:
         fetch-depth: 0
         ref: main
-        repository: ivancarlosti/miniflixreader  # Explicitly specify YOUR repo
+        repository: ivancarlosti/miniflixreader
         persist-credentials: true
 
-    - name: Download ReactFlux content
+    - name: Show initial state
+      run: |
+        echo "=== INITIAL STATE ==="
+        echo "Working directory:"
+        pwd
+        echo "Files before sync:"
+        ls -la
+        echo "Git status before:"
+        git status
+
+    - name: Download and sync content
       run: |
         mkdir -p temp
         cd temp
         git clone --branch gh-pages --depth 1 https://github.com/electh/ReactFlux.git
-        echo "Copying files (excluding .github)..."
-        rsync -av --exclude='.github' ReactFlux/ ../
+        echo "=== SOURCE FILES ==="
+        ls -la ReactFlux/
+        echo "=== SYNCING ==="
+        rsync -av --exclude='.github' --progress ReactFlux/ ../
         cd ..
-        rm -rf temp
+        echo "=== RESULT AFTER SYNC ==="
+        ls -la
+
+    - name: Verify changes
+      run: |
+        echo "=== CHANGES TO BE COMMITTED ==="
+        git add .
+        git status
+        git diff --cached --stat
+        if [ -z "$(git status --porcelain)" ]; then
+          echo "No changes detected!"
+          exit 1
+        fi
 
     - name: Commit changes
       run: |
         git config --global user.email "ivan@ivancarlos.com.br"
         git config --global user.name "ivancarlosti"
-        git add .
-        
-        if [ -n "$(git status --porcelain)" ]; then
-          git commit -m "Sync ReactFlux content [automated]"
-          echo "Changes committed"
-        else
-          echo "No changes to commit"
-          exit 0
-        fi
+        git commit -m "Sync ReactFlux content [automated]"
+        git show --stat
 
-    - name: Push to YOUR repository
+    - name: Push changes
       run: |
-        # Explicitly push to YOUR repo using GITHUB_TOKEN
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/ivancarlosti/miniflixreader.git
+        git remote -v
         git push origin main
-        echo "Push successful to ivancarlosti/miniflixreader"
+        echo "=== PUSH VERIFICATION ==="
+        git ls-remote --heads origin
