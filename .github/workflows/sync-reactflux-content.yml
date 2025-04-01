@@ -1,45 +1,59 @@
 name: Sync ReactFlux Content to Main
 
 on:
-  schedule:
-    - cron: '0 */12 * * *'
-  workflow_dispatch:
-
-permissions:
-  contents: write
+  workflow_dispatch:  # Temporarily remove schedule for testing
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout main branch
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-        ref: main  # Explicitly checkout main branch
+        ref: main
         persist-credentials: true
 
-    - name: Download ReactFlux tree
+    - name: Show initial state
+      run: |
+        echo "Current files:"
+        ls -la
+        echo "Git status:"
+        git status
+
+    - name: Download ReactFlux content
       run: |
         mkdir -p temp
         cd temp
         git clone --branch gh-pages --depth 1 https://github.com/electh/ReactFlux.git
-        rsync -av --exclude='.github' --exclude='CNAME' --exclude='README.md' --exclude='LICENSE' ReactFlux/ ../
+        echo "ReactFlux files:"
+        ls -la ReactFlux/
+        rsync -av --exclude='.github' ReactFlux/ ../
         cd ..
         rm -rf temp
+        echo "Files after sync:"
+        ls -la
 
-    - name: Commit and push changes to main
+    - name: Commit changes
       run: |
         git config --global user.email "ivan@ivancarlos.com.br"
         git config --global user.name "ivancarlosti"
         git add .
-        
-        if git diff --quiet && git diff --cached --quiet; then
-          echo "No changes to commit"
-        else
+        git status
+        git diff --cached --stat
+        if ! git diff --quiet || ! git diff --cached --quiet; then
           git commit -m "Sync ReactFlux content [automated]"
-          git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git pull --rebase origin main  # Ensure we're up to date
-          git push origin main
+          git show --stat  # Show what's being committed
+        else
+          echo "No changes to commit"
         fi
+
+    - name: Push changes
+      run: |
+        git remote -v
+        git push origin main -v
+        echo "Push complete. Latest commits:"
+        git log --oneline -n 3
