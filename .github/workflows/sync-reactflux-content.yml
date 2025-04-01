@@ -53,10 +53,14 @@ jobs:
           [ -f "preserve-temp/LICENSE" ] && mv preserve-temp/LICENSE ./
           rm -rf preserve-temp
 
-      - name: Commit and push changes
+      - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          git config --global --add safe.directory /github/workspace
+
+      - name: Commit and push changes
+        run: |
           git add -A
           git diff-index --quiet HEAD || git commit -m "Auto-sync with ReactFlux gh-pages branch"
           git push
