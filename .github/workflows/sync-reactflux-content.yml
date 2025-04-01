@@ -2,6 +2,9 @@ name: Sync ReactFlux Content to Main
 
 on:
   workflow_dispatch:
+  schedule:
+    # Runs at 00:38 and 12:38 UTC every day
+    - cron: '38 */12 * * *'
 
 jobs:
   sync:
@@ -66,6 +69,6 @@ jobs:
       run: |
         cd "$GITHUB_WORKSPACE"
         git push \
-          https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/ivancarlosti/miniflixreader.git \
+          https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/ivancarlosti/minifluxreader.git \
           HEAD:main
         echo "=== Push successful ==="
