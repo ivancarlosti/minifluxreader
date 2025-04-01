@@ -17,7 +17,21 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+        ref: gh-pages  # Try to checkout gh-pages branch
         persist-credentials: true
+
+    - name: Create gh-pages branch if it doesn't exist
+      run: |
+        if ! git show-ref --quiet refs/heads/gh-pages; then
+          echo "Creating gh-pages branch..."
+          git checkout --orphan gh-pages
+          git rm -rf .
+          echo "Initial commit" > README.md
+          git add README.md
+          git commit -m "Initialize gh-pages branch"
+        else
+          echo "gh-pages branch already exists"
+        fi
 
     - name: Download ReactFlux tree
       run: |
@@ -34,13 +48,10 @@ jobs:
         git config --global user.name "ivancarlosti"
         git add .
         
-        # Only commit if there are changes
         if git diff --quiet && git diff --cached --quiet; then
           echo "No changes to commit"
         else
           git commit -m "Sync ReactFlux content"
-          # Use the GitHub token for authentication
           git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git pull --rebase
-          git push origin HEAD:gh-pages
+          git push origin gh-pages
         fi
