@@ -1,85 +1,22 @@
-name: Sync ReactFlux gh-pages content
+name: Sync ReactFlux Content
+
 on:
   schedule:
     - cron: '0 */12 * * *'
-  workflow_dispatch:
 
 jobs:
-  sync-content:
+  sync:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Verify Git context
-        run: |
-          echo "Workspace: $GITHUB_WORKSPACE"
-          git rev-parse --git-dir
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - name: Download gh-pages content
-        id: download
-        run: |
-          TEMP_DIR=$(mktemp -d)
-          echo "temp_dir=$TEMP_DIR" >> $GITHUB_OUTPUT
-          
-          cd $TEMP_DIR
-          wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip
-          unzip -q gh-pages.zip
-          rm gh-pages.zip
-          
-          echo "Downloaded content:"
-          ls -la ReactFlux-gh-pages/
-
-      - name: Backup configuration
-        run: |
-          mkdir -p .sync-backup
-          [ -f "CNAME" ] && cp CNAME .sync-backup/
-          [ -f "README.md" ] && cp README.md .sync-backup/
-          [ -f "LICENSE" ] && cp LICENSE .sync-backup/
-
-      - name: Clean workspace
-        run: |
-          find . -mindepth 1 \
-            ! -name '.git' \
-            ! -name '.github' \
-            ! -name '.sync-backup' \
-            -exec rm -rf {} +
-
-      - name: Move new content
-        run: |
-          TEMP_DIR=${{ steps.download.outputs.temp_dir }}
-          echo "Moving content from $TEMP_DIR"
-          
-          if [ -d "$TEMP_DIR/ReactFlux-gh-pages" ]; then
-            shopt -s dotglob
-            mv "$TEMP_DIR/ReactFlux-gh-pages"/* ./
-            rm -rf "$TEMP_DIR"
-            
-            # Restore backups
-            [ -f ".sync-backup/CNAME" ] && mv .sync-backup/CNAME ./
-            [ -f ".sync-backup/README.md" ] && mv .sync-backup/README.md ./
-            [ -f ".sync-backup/LICENSE" ] && mv .sync-backup/LICENSE ./
-            rm -rf .sync-backup
-          else
-            echo "Error: Content directory missing"
-            echo "Temp dir contents:"
-            ls -la "$TEMP_DIR"
-            exit 1
-          fi
-
-      - name: Commit changes
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add -A
-          if ! git diff-index --quiet HEAD; then
-            git commit -m "Auto-sync with ReactFlux gh-pages content"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+    - name: Download ReactFlux tree
+      run: |
+        mkdir -p temp
+        cd temp
+        git clone --branch gh-pages --depth 1 https://github.com/electh/ReactFlux.git
+        rsync -av --exclude='.github' --exclude='CNAME' --exclude='README.md' --exclude='LICENSE' ReactFlux/ ../
+        cd ..
+        rm -rf temp
