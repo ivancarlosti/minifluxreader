@@ -8,7 +8,6 @@ jobs:
   sync-content:
     runs-on: ubuntu-latest
     steps:
-      # First checkout with proper permissions
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -16,35 +15,33 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
-      # Immediately verify we're in a git repo
       - name: Verify Git context
         run: |
-          echo "Current directory: $(pwd)"
-          ls -la
+          echo "Workspace: $GITHUB_WORKSPACE"
           git rev-parse --git-dir
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      # Download and process content in isolated temp dir
       - name: Download gh-pages content
+        id: download
         run: |
           TEMP_DIR=$(mktemp -d)
+          echo "temp_dir=$TEMP_DIR" >> $GITHUB_OUTPUT
+          
           cd $TEMP_DIR
           wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip
           unzip -q gh-pages.zip
           rm gh-pages.zip
+          
           echo "Downloaded content:"
-          find . -maxdepth 2 -type d
-          cd $GITHUB_WORKSPACE
+          ls -la ReactFlux-gh-pages/
 
-      # Backup protected files
       - name: Backup configuration
         run: |
           mkdir -p .sync-backup
-          cp -f CNAME README.md LICENSE .sync-backup/ || true
-          echo "Backup contents:"
-          ls -la .sync-backup
+          [ -f "CNAME" ] && cp CNAME .sync-backup/
+          [ -f "README.md" ] && cp README.md .sync-backup/
+          [ -f "LICENSE" ] && cp LICENSE .sync-backup/
 
-      # Clear existing content
       - name: Clean workspace
         run: |
           find . -mindepth 1 \
@@ -53,19 +50,30 @@ jobs:
             ! -name '.sync-backup' \
             -exec rm -rf {} +
 
-      # Move new content
       - name: Move new content
         run: |
-          shopt -s dotglob
-          mv $TEMP_DIR/ReactFlux-gh-pages/* ./
-          rm -rf $TEMP_DIR
-          mv .sync-backup/* ./
-          rm -rf .sync-backup
+          TEMP_DIR=${{ steps.download.outputs.temp_dir }}
+          echo "Moving content from $TEMP_DIR"
+          
+          if [ -d "$TEMP_DIR/ReactFlux-gh-pages" ]; then
+            shopt -s dotglob
+            mv "$TEMP_DIR/ReactFlux-gh-pages"/* ./
+            rm -rf "$TEMP_DIR"
+            
+            # Restore backups
+            [ -f ".sync-backup/CNAME" ] && mv .sync-backup/CNAME ./
+            [ -f ".sync-backup/README.md" ] && mv .sync-backup/README.md ./
+            [ -f ".sync-backup/LICENSE" ] && mv .sync-backup/LICENSE ./
+            rm -rf .sync-backup
+          else
+            echo "Error: Content directory missing"
+            echo "Temp dir contents:"
+            ls -la "$TEMP_DIR"
+            exit 1
+          fi
 
-      # Final commit with explicit git context
       - name: Commit changes
         run: |
-          cd $GITHUB_WORKSPACE
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add -A
