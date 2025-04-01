@@ -8,76 +8,66 @@ jobs:
   sync-content:
     runs-on: ubuntu-latest
     steps:
+      # First checkout with proper permissions
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
-      - name: Verify Git repository
+      # Immediately verify we're in a git repo
+      - name: Verify Git context
         run: |
           echo "Current directory: $(pwd)"
-          git status
-          echo "Directory contents:"
           ls -la
+          git rev-parse --git-dir
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: Download and process gh-pages content
+      # Download and process content in isolated temp dir
+      - name: Download gh-pages content
         run: |
-          # Create isolated working directory
-          WORK_DIR=$(mktemp -d)
-          echo "Work directory: $WORK_DIR"
-          
-          # Download and extract gh-pages
-          cd $WORK_DIR
+          TEMP_DIR=$(mktemp -d)
+          cd $TEMP_DIR
           wget -q https://github.com/electh/ReactFlux/archive/refs/heads/gh-pages.zip
           unzip -q gh-pages.zip
           rm gh-pages.zip
-          
-          # Verify downloaded content
-          echo "Downloaded content structure:"
-          find . -type d
-          
-          # Return to repository
+          echo "Downloaded content:"
+          find . -maxdepth 2 -type d
           cd $GITHUB_WORKSPACE
-          
-          # Backup protected files
-          mkdir -p .backup
-          [ -f "CNAME" ] && cp CNAME .backup/
-          [ -f "README.md" ] && cp README.md .backup/
-          [ -f "LICENSE" ] && cp LICENSE .backup/
-          
-          # Clear existing content (preserve .git, .github, and backup)
+
+      # Backup protected files
+      - name: Backup configuration
+        run: |
+          mkdir -p .sync-backup
+          cp -f CNAME README.md LICENSE .sync-backup/ || true
+          echo "Backup contents:"
+          ls -la .sync-backup
+
+      # Clear existing content
+      - name: Clean workspace
+        run: |
           find . -mindepth 1 \
             ! -name '.git' \
             ! -name '.github' \
-            ! -name '.backup' \
-            ! -name 'CNAME' \
-            ! -name 'README.md' \
-            ! -name 'LICENSE' \
+            ! -name '.sync-backup' \
             -exec rm -rf {} +
 
-          # Move new content
-          if [ -d "$WORK_DIR/ReactFlux-gh-pages" ]; then
-            shopt -s dotglob
-            mv $WORK_DIR/ReactFlux-gh-pages/* ./
-            rm -rf $WORK_DIR
-          else
-            echo "Error: Downloaded content structure:"
-            find $WORK_DIR -type d
-            exit 1
-          fi
-          
-          # Restore protected files
-          [ -f ".backup/CNAME" ] && mv .backup/CNAME ./
-          [ -f ".backup/README.md" ] && mv .backup/README.md ./
-          [ -f ".backup/LICENSE" ] && mv .backup/LICENSE ./
-          rm -rf .backup
-
-      - name: Commit and push changes
+      # Move new content
+      - name: Move new content
         run: |
+          shopt -s dotglob
+          mv $TEMP_DIR/ReactFlux-gh-pages/* ./
+          rm -rf $TEMP_DIR
+          mv .sync-backup/* ./
+          rm -rf .sync-backup
+
+      # Final commit with explicit git context
+      - name: Commit changes
+        run: |
+          cd $GITHUB_WORKSPACE
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git config --global --add safe.directory $GITHUB_WORKSPACE
           git add -A
           if ! git diff-index --quiet HEAD; then
             git commit -m "Auto-sync with ReactFlux gh-pages content"
