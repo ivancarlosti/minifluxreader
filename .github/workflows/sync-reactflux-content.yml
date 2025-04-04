@@ -38,6 +38,7 @@ jobs:
         rsync -av \
           --exclude='.github' \
           --exclude='.git' \
+          --exclude='favicon.ico' \
           ReactFlux/ "$GITHUB_WORKSPACE/"
         echo "=== Files copied to repository ==="
         ls -la "$GITHUB_WORKSPACE"
