@@ -58,7 +58,7 @@ jobs:
         git add .
         
         if [ -n "$(git status --porcelain)" ]; then
-          git commit -m "Sync ReactFlux content [automated]"
+          git commit -m "Sync ReactFlux content [▶️]"
           echo "=== Commit details ==="
           git show --stat
         else
