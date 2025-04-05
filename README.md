@@ -1,4 +1,4 @@
-# miniflixreader
+# MiniFlux Reader
 A Simple but Powerful RSS Reader for Miniflux
 
 ## Status
