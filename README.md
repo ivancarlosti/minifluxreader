@@ -1,6 +1,7 @@
 # MiniFlux Reader
 A Simple but Powerful RSS Reader for Miniflux
 
+<!-- buttons -->
 [![Stars](https://img.shields.io/github/stars/ivancarlosti/minifluxreader?label=⭐%20Stars&color=gold&style=flat)](https://github.com/ivancarlosti/minifluxreader/stargazers)
 [![GitHub last commit](https://img.shields.io/github/last-commit/ivancarlosti/minifluxreader?label=Last%20Commit)](https://github.com/ivancarlosti/minifluxreader/commits)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ivancarlosti/minifluxreader?label=Activity)](https://github.com/ivancarlosti/minifluxreader/pulse)
@@ -10,10 +11,12 @@ A Simple but Powerful RSS Reader for Miniflux
 [![Code of Conduct](https://img.shields.io/badge/Code%20of%20Conduct-1.4-4baaaa)](https://github.com/ivancarlosti/minifluxreader/tree/main?tab=coc-ov-file)  
 [![sync-reactflux-content](https://github.com/ivancarlosti/minifluxreader/actions/workflows/sync-reactflux-content.yml/badge.svg)](https://github.com/ivancarlosti/minifluxreader/actions/workflows/sync-reactflux-content.yml)  
 [![pages-build-deployment](https://github.com/ivancarlosti/minifluxreader/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/ivancarlosti/minifluxreader/actions/workflows/pages/pages-build-deployment)
+<!-- endbuttons -->
 
 ## Inspiration
 1. Project inspired by [ReactFlux](https://github.com/electh/ReactFlux/), license preserved.
 
+<!-- footer -->
 ---
 
 ## 🧑‍💻 Consulting and technical support
