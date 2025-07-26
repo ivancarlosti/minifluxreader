@@ -23,6 +23,5 @@
   "background_color": "#ffffff",
   "display": "fullscreen",
   "fullscreen": "true",
-  "start_url": "/",
-  "version": "1.00.001"
+  "start_url": "/"
 }
