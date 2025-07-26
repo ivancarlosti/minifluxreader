@@ -1,5 +1,5 @@
 # MiniFlux Reader
-A Simple but Powerful RSS Reader for Miniflux
+A Simple but Powerful RSS Reader for Miniflux.
 
 <!-- buttons -->
 [![Stars](https://img.shields.io/github/stars/ivancarlosti/minifluxreader?label=⭐%20Stars&color=gold&style=flat)](https://github.com/ivancarlosti/minifluxreader/stargazers)
