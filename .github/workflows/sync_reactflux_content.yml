@@ -50,23 +50,31 @@ jobs:
         echo "Temp folder contents:"
         ls -la /tmp/reactflux_temp 2>/dev/null || echo "Temp folder removed"
 
-    - name: Commit changes
+    - name: Commit changes (skip if only manifest.json changed)
       run: |
         cd "$GITHUB_WORKSPACE"
         git config --global user.email "ivan@ivancarlos.com.br"
         git config --global user.name "ivancarlosti"
+
         git add .
-        
-        if [ -n "$(git status --porcelain)" ]; then
+        changes=$(git status --porcelain)
+        # Extract changed filenames only
+        changed_files=$(echo "$changes" | awk '{print $2}' | grep .)
+
+        if [ -z "$changes" ]; then
+          echo "No changes to commit"
+          exit 0
+        elif [ "$(echo "$changed_files" | wc -l)" -eq 1 ] && [ "$changed_files" = "manifest.json" ]; then
+          echo "Only manifest.json changed, skipping commit"
+          exit 0
+        else
           git commit -m "Sync ReactFlux content [▶️]"
           echo "=== Commit details ==="
           git show --stat
-        else
-          echo "No changes to commit"
-          exit 0
         fi
 
     - name: Push changes
+      if: success()
       run: |
         cd "$GITHUB_WORKSPACE"
         git push \
