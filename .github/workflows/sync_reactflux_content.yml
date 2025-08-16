@@ -60,18 +60,18 @@ jobs:
 
           git add .
           changes=$(git status --porcelain)
-          # Extract changed filenames only
-          changed_files=$(echo "$changes" | awk '{print $2}' | grep .)
-
+          # Avoid grep causing exit 1
+          changed_files=$(echo "$changes" | awk '{print $2}' | grep . || true)
+          
           if [ -z "$changes" ]; then
             echo "No changes to commit"
             exit 0
-          elif [ "$(echo "$changed_files" | wc -l)" -eq 1 ] && [ "$changed_files" = "manifest.json" ]; then
+          elif [ "$(printf "%s\n" "$changed_files" | sed '/^$/d' | wc -l | tr -d ' ')" -eq 1 ] && [ "$changed_files" = "manifest.json" ]; then
             echo "Only manifest.json changed, skipping commit"
             exit 0
           else
             if git commit -m "Sync ReactFlux content [▶️]"; then
-              echo "=== Commit details ==="
+              echo "= Commit details ="
               git show --stat
             else
               echo "Commit failed (possibly no changes)"
