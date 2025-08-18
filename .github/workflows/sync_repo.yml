@@ -1,8 +1,8 @@
-name: Sync ReactFlux Content to Main
+name: Sync Repo
+
 on:
   workflow_dispatch:
   schedule:
-    # Runs at 00:38 and 12:38 UTC every day
     - cron: '38 */12 * * *'
 
 jobs:
