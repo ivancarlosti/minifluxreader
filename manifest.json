@@ -23,7 +23,5 @@
   "background_color": "#ffffff",
   "display": "fullscreen",
   "fullscreen": "true",
-  "start_url": "/",
-  "version": "4.1.1",
-  "author": "Ivan Carlos"
+  "start_url": "/"
 }
