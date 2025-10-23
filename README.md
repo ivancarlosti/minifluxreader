@@ -1,5 +1,5 @@
 # MiniFlux Reader
-A Simple but Powerful RSS Reader for Miniflux.
+A Simple but Powerful RSS Reader for Miniflux being hosted on GitHub Pages.
 
 <!-- buttons -->
 [![Stars](https://img.shields.io/github/stars/ivancarlosti/minifluxreader?label=⭐%20Stars&color=gold&style=flat)](https://github.com/ivancarlosti/minifluxreader/stargazers)
@@ -15,7 +15,7 @@ A Simple but Powerful RSS Reader for Miniflux.
 <!-- endbuttons -->
 
 ## Inspiration
-1. Project inspired by [ReactFlux](https://github.com/electh/ReactFlux/), license preserved.
+1. This is a repository to host the project [ReactFlux](https://github.com/electh/ReactFlux/) into my GitHub Pages, license preserved.
 
 <!-- footer -->
 ---
