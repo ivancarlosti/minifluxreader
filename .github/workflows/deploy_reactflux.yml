@@ -29,6 +29,12 @@ jobs:
         with:
           repository: electh/ReactFlux
           ref: main
+          path: reactflux
+      
+      - name: Checkout your repository for _pages folder
+        uses: actions/checkout@v4
+        with:
+          path: my-repo
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -39,17 +45,29 @@ jobs:
         run: npm install -g pnpm
       
       - name: Install dependencies
+        working-directory: ./reactflux
         run: pnpm install --frozen-lockfile
       
       - name: Build ReactFlux
+        working-directory: ./reactflux
         run: pnpm run build
         env:
           NODE_ENV: production
       
+      - name: Copy custom files from _pages folder
+        run: |
+          if [ -d "my-repo/_pages" ]; then
+            echo "Copying files from _pages to build directory..."
+            cp -R my-repo/_pages/. reactflux/build/
+            echo "Files copied successfully!"
+          else
+            echo "No _pages folder found, skipping..."
+          fi
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./build
+          path: ./reactflux/build
 
   deploy:
     environment:
